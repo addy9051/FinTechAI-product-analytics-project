@@ -20,7 +20,7 @@ dependencies = [
 # every group together, so reproducibility is universal.
 [dependency-groups]
 dbt = ["dbt-core>=1.9.1", "dbt-duckdb>=1.9.1"]              # Phase 1 — transformation
-llm = ["litellm>=1.55.9", "langfuse>=2.57.0"]              # Phase 2 — gateway + observability
+llm = ["litellm>=1.55.9", "langfuse>=2.57.0", "python-dotenv>=1.0.0", "pydantic-settings>=2.0.0"]  # Phase 2 — gateway + observability (pydantic-settings req'd by litellm's langfuse_otel callback)
 experiments = ["statsmodels>=0.14.4", "scipy>=1.14.1"]     # Phase 3 — experiment analysis
 dashboard = ["streamlit>=1.41.1", "plotly>=5.24.1"]        # Phase 4 — dashboard
 

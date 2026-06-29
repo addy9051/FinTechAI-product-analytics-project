@@ -18,3 +18,13 @@ models:
         data_tests: [unique, not_null]
       - name: completion_rate_pct
         data_tests: [not_null]
+
+  - name: fct_llm_cost
+    description: >
+      LLM cost per converted user, by model_version (+ an 'ALL' rollup row).
+      total LLM spend / funded loans = true cost of acquiring a funded loan via AI.
+    columns:
+      - name: model_version
+        data_tests: [unique, not_null]
+      - name: cost_per_converted_user
+        data_tests: [not_null]

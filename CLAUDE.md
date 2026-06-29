@@ -28,7 +28,7 @@ Ollama models: **`llama3.2`** = primary (slower), **`llama3.2:1b`** = fast fallb
 ## Build phases
 - **Phase 0 — DONE.** Synthetic data + DuckDB load. 32.9% drop confirmed, causal via latency.
 - **Phase 1 — DONE.** dbt-duckdb project: 4 `stg_` → 3 `int_` → 2 `fct_` marts; rolling-latency window fn; funnel + latency-band cohort marts. 9 models, 27 tests pass. Marts: `fct_funnel`, `fct_latency_cohorts`.
-- **Phase 2 — NEXT.** LiteLLM gateway + Ollama fallback router (>4s threshold) + Langfuse tracing; compute LLM **cost per converted user**.
+- **Phase 2 — DONE.** Router (`llm/gateway.py`): primary `ollama_chat/llama3.2` → fast `ollama_chat/llama3.2:1b` on >4s, with telemetry. Cost-per-converted-user mart `fct_llm_cost`. Langfuse tracing via litellm `langfuse_otel` — verified traces land (name/user/tags/session).
 - **Phase 3.** 2×2 factorial (progress bar × fallback) + one-sided **non-inferiority test** on loan-default rate (guardrail).
 - **Phase 4.** Streamlit dashboard + deploy to Streamlit Cloud (the clickable link).
 
@@ -41,6 +41,9 @@ Ollama models: **`llama3.2`** = primary (slower), **`llama3.2:1b`** = fast fallb
 - Latency bands: `<3s / 3–5s / 5–8s / >8s`. Confirmed completion rates: 88.8% → 80.0% → 63.8% → 44.0%.
 - Raw tables in DuckDB: `raw_users`, `raw_funnel_events`, `raw_llm_traces`, `raw_loans`.
 - Fallback threshold = **4s**; default rate ≈ 7.8%; default risk = f(credit_score, requested_amount).
+- Local Ollama is **CPU-only and slow** (3B cold-load ~60s; even 1B inference ~8s). So: `warmup()` models before timed routing; the live gateway *proves the mechanism* on a few cases, while at-scale cost/funnel analysis uses the synthetic `raw_llm_traces` (never 20k live calls).
+- **Cost per converted user** (`fct_llm_cost`): primary **$0.036** vs fast **$0.0076** (~4.8×); blended $0.031. The fallback **cuts cost AND lifts completion** — the core Phase 2 result.
+- Langfuse: litellm **`langfuse_otel`** callback (matches v4 SDK), needs **`pydantic-settings`** installed, reads **`LANGFUSE_OTEL_HOST`** (gateway derives it from canonical **`LANGFUSE_BASE_URL`**). Keys in `.env`, **EU region**. Attempt+fallback grouped by `session_id`. Official Langfuse skill installed at `.claude/skills/langfuse/`.
 
 ## Statistical methods (Phase 3) — locked
 Full rationale + triage table: `docs/adr/0001-statistical-methods.md`. Governing rule:
@@ -66,8 +69,9 @@ uv run python synthetic-data/load_duckdb.py      # load + print diagnostic
 # Phase 1 — dbt (always run from project root):
 uv run dbt run  --project-dir dbt --profiles-dir dbt
 uv run dbt test --project-dir dbt --profiles-dir dbt
-# Phase 2 prep (once Ollama installed):
+# Phase 2 — Ollama models (installed) + run the fallback router demo:
 ollama pull llama3.2 && ollama pull llama3.2:1b
+uv run python llm/gateway.py                      # warms models, then routes one analysis
 # After changing deps, refresh the pip fallback:
 uv export --all-groups --no-hashes --no-emit-project -o requirements.txt
 ```
