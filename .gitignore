@@ -18,6 +18,10 @@ dbt/logs/
 .env
 *.local
 
+# MCP knowledge-graph memory (local dev aid; .mcp.json has a machine-specific path)
+.mcp.json
+.claude/memory-graph.json
+
 # os
 .DS_Store
 Thumbs.db

@@ -32,12 +32,27 @@ Ollama models: **`llama3.2`** = primary (slower), **`llama3.2:1b`** = fast fallb
 - **Phase 3.** 2×2 factorial (progress bar × fallback) + one-sided **non-inferiority test** on loan-default rate (guardrail).
 - **Phase 4.** Streamlit dashboard + deploy to Streamlit Cloud (the clickable link).
 
+**Tracked carry-overs** (`docs/BACKLOG.md`):
+- **Before Phase 3:** enrich `abandon_prob` with a confounder (`requested_amount → tokens → latency` *and* `→ commitment → abandonment`) so the back-door causal estimate isn't circular. Keep latency dominant; drop stays ~32%.
+
 ## Key facts (don't re-derive)
 - Funnel stages: `sign_up → bank_link → ai_analysis_initiated → ai_analysis_completed → loan_terms_offered → loan_accepted`.
 - The 32% drop is between `ai_analysis_initiated` and `ai_analysis_completed`, **driven by LLM latency** (`abandon_prob` in the generator).
 - Latency bands: `<3s / 3–5s / 5–8s / >8s`. Confirmed completion rates: 88.8% → 80.0% → 63.8% → 44.0%.
 - Raw tables in DuckDB: `raw_users`, `raw_funnel_events`, `raw_llm_traces`, `raw_loans`.
 - Fallback threshold = **4s**; default rate ≈ 7.8%; default risk = f(credit_score, requested_amount).
+
+## Statistical methods (Phase 3) — locked
+Full rationale + triage table: `docs/adr/0001-statistical-methods.md`. Governing rule:
+data is **synthetic**, so favour methods whose demonstration is *honest* (A/A calibration,
+changepoint with an injected shift, SRM with an injected bad split) over ones that merely
+recover an injected effect.
+- **BUILD — core:** two-proportion z-test (completion), 2×2 main effects **+ interaction**, one-sided non-inferiority test on default rate (**fixed-horizon**), power/sample-size.
+- **BUILD — cheap rigor:** SRM χ² check, A/A simulation, Benjamini-Hochberg.
+- **BUILD — one differentiator (LLM-ops headline):** CUSUM changepoint monitor on latency/default drift → dashboard. Add sequential mSPRT on the primary metric if time.
+- **OPTIONAL — causal:** one back-door/DAG adjustment (backs the "causal via latency" claim); IV (ITT vs per-protocol) as the flex.
+- **SKIP — ADR-only:** RDD, DiD/synthetic control, bandits (conflict with guardrail), DML, CUPED, GLR/weighted-SPRT/multistream.
+- Guardrail stays **fixed-horizon** even when the primary metric runs sequential. Bandits skipped *because* a regret term can't encode a hard default-rate constraint.
 
 ## Commands
 Dependency manager is **uv** (`pyproject.toml` + `uv.lock`). Phase deps are in
