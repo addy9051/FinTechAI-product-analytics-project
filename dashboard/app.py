@@ -300,19 +300,23 @@ with tab_exec:
         help="Users lost between AI analysis initiated → completed",
     )
     k2.metric(
-        "Best Completion Lift",
+        "Completion Uplift",
         f"+{best_lift:.1f}pp",
         "both fixes (progress bar + fallback)",
+        help="AI-analysis completion-rate gain from the combined fix vs control, in percentage "
+             "points — recovers ~9 of the ~33 points lost at this step.",
     )
     k3.metric(
-        "Ship Decision",
+        "Launch Recommendation",
         "SHIP ✅" if exp["ship"] else "HOLD ⛔",
         "guardrail non-inferior" if exp["guardrail"]["non_inferior"] else "guardrail breach",
+        help="Ship only if completion improves AND the default-rate and fairness guardrails both hold.",
     )
     k4.metric(
-        "CUSUM Detection",
+        "Time to Detect Drift",
         f"{cmeta['detection_delay']} day{'s' if cmeta['detection_delay'] != 1 else ''}" if cmeta["detection_delay"] else "No alarm",
-        "latency drift → alarm",
+        "latency regression → alert",
+        help="How fast the production monitor flags a latency regression (CUSUM changepoint detector).",
     )
 
     st.markdown("")
@@ -598,7 +602,7 @@ with tab_exp:
         st.plotly_chart(fig, use_container_width=True)
 
     with ec2:
-        st.markdown("#### Cell details")
+        st.markdown("#### Variant breakdown")
         for c in cells:
             name = names[(c["progress_bar"], c["fallback"])]
             p_str = f"p < 0.001" if c.get("p_value") is not None and c["p_value"] < 0.001 else (
@@ -835,7 +839,7 @@ with tab_cost:
     ws1, ws2, ws3, ws4 = st.columns(4)
     ws1.metric("Projected Blended Cost", f"${sim_total_cost:.2f}",
                f"{(sim_total_cost / float(cost.loc[cost.model_version == 'ALL', 'total_cost_usd'].iloc[0]) - 1):.0%} vs current")
-    ws2.metric("Projected CPC", f"${sim_cpc:.4f}",
+    ws2.metric("Projected Cost / Conversion", f"${sim_cpc:.4f}",
                f"{(sim_cpc / float(cost.loc[cost.model_version == 'ALL', 'cost_per_converted_user'].iloc[0]) - 1):.0%} vs current")
     ws3.metric(f"Est. Completion @ {latency_target:.1f}s", f"{projected_completion:.1f}%",
                help="Interpolated from latency cohort data")
@@ -964,9 +968,9 @@ with tab_monitor:
     m1, m2, m3, m4 = st.columns(4)
     m1.metric("Detection Delay", f"{cmeta['detection_delay']} day{'s' if cmeta['detection_delay'] != 1 else ''}" if cmeta["detection_delay"] else "N/A",
               help="Days from injected regression to CUSUM alarm")
-    m2.metric("Threshold (h)", f"{cmeta['threshold_h']:.1f}",
+    m2.metric("Alarm Threshold (h)", f"{cmeta['threshold_h']:.1f}",
               help="CUSUM decision interval: h = 5σ")
-    m3.metric("Baseline μ₀", f"{cmeta['mu0']}s",
+    m3.metric("Baseline Latency (μ₀)", f"{cmeta['mu0']}s",
               help="Expected mean latency under normal operation")
     m4.metric("Alarm Day", f"Day {cmeta['alarm_day']}" if alarm_fired else "None",
               help="Day the CUSUM statistic exceeded threshold h")
