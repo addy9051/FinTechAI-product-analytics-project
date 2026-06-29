@@ -1,4 +1,4 @@
-# LoanLens — diagnosing & fixing a 32% AI-analysis drop-off in an LLM micro-loan funnel
+# LoanLens — diagnosing & fixing a 32% AI-analysis drop-off in an LLM powered micro-loan funnel
 
 A portfolio-grade analytics + LLM-ops pilot. It reproduces, in a fully local /
 free-tier stack, the hero problem from a production FinTech blueprint:
