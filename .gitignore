@@ -1,0 +1,23 @@
+# data artifacts (regenerate with synthetic-data/generate.py)
+data/*.parquet
+data/*.duckdb
+data/*.duckdb.wal
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# dbt
+dbt/target/
+dbt/dbt_packages/
+dbt/logs/
+
+# env / secrets
+.env
+*.local
+
+# os
+.DS_Store
+Thumbs.db
