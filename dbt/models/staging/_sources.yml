@@ -1,0 +1,13 @@
+version: 2
+
+sources:
+  - name: raw
+    description: >
+      Raw tables loaded into DuckDB by synthetic-data/load_duckdb.py.
+      One row per user / event / LLM trace / accepted loan.
+    schema: main
+    tables:
+      - name: raw_users
+      - name: raw_funnel_events
+      - name: raw_llm_traces
+      - name: raw_loans

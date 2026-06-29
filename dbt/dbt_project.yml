@@ -1,0 +1,31 @@
+name: 'loanlens'
+version: '1.0.0'
+config-version: 2
+
+# Connects to the 'loanlens' profile in dbt/profiles.yml (run with --profiles-dir dbt).
+profile: 'loanlens'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# Layered materialization (portfolio convention):
+#   staging      -> views  (cheap 1:1 cleanups)
+#   intermediate -> views  (joins / business logic)
+#   marts        -> tables (queried by the dashboard, so persist them)
+models:
+  loanlens:
+    staging:
+      +materialized: view
+    intermediate:
+      +materialized: view
+    marts:
+      +materialized: table

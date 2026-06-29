@@ -1,0 +1,36 @@
+version: 2
+
+models:
+  - name: int_user_funnel
+    description: "One row per user with a boolean flag per funnel stage reached."
+    columns:
+      - name: user_id
+        data_tests: [unique, not_null]
+
+  - name: int_session_llm
+    description: "Session-grain LLM analysis joined to user attributes + completion outcome. Confounder-ready for Phase 3."
+    columns:
+      - name: user_id
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_users')
+                field: user_id
+      - name: latency_band
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['1: <3s', '2: 3-5s', '3: 5-8s', '4: >8s']
+      - name: completed
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+
+  - name: int_llm_rolling_latency
+    description: "Trailing 7-row rolling average latency per model_version (window function)."
+    columns:
+      - name: rolling_avg_latency_7
+        data_tests: [not_null]

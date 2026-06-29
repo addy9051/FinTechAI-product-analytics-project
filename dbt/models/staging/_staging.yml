@@ -1,0 +1,54 @@
+version: 2
+
+models:
+  - name: stg_users
+    description: "Cleaned users, one row per signup."
+    columns:
+      - name: user_id
+        description: "Primary key — unique per user."
+        data_tests: [unique, not_null]
+      - name: device
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['ios', 'android', 'web']
+      - name: requested_amount
+        data_tests: [not_null]
+
+  - name: stg_funnel_events
+    description: "Long-format funnel event log (one row per user per stage reached)."
+    columns:
+      - name: user_id
+        data_tests: [not_null]
+      - name: event_name
+        description: "The six funnel stages."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['sign_up', 'bank_link', 'ai_analysis_initiated',
+                         'ai_analysis_completed', 'loan_terms_offered', 'loan_accepted']
+
+  - name: stg_llm_traces
+    description: "LLM analysis telemetry, one row per AI-analysis call."
+    columns:
+      - name: user_id
+        description: "One trace per user (each user runs AI analysis at most once)."
+        data_tests: [unique, not_null]
+      - name: model_version
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['primary', 'fast']
+      - name: latency_s
+        data_tests: [not_null]
+
+  - name: stg_loans
+    description: "Accepted loans with matured default outcome."
+    columns:
+      - name: user_id
+        data_tests: [unique, not_null]
+      - name: defaulted
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [true, false]

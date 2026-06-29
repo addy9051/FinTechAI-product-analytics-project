@@ -27,8 +27,8 @@ Ollama models: **`llama3.2`** = primary (slower), **`llama3.2:1b`** = fast fallb
 
 ## Build phases
 - **Phase 0 — DONE.** Synthetic data + DuckDB load. 32.9% drop confirmed, causal via latency.
-- **Phase 1 — NEXT.** dbt project: staging → intermediate → marts; rolling-latency window fn; funnel + latency-band cohort marts.
-- **Phase 2.** LiteLLM gateway + Ollama fallback router (>4s threshold) + Langfuse tracing; compute LLM **cost per converted user**.
+- **Phase 1 — DONE.** dbt-duckdb project: 4 `stg_` → 3 `int_` → 2 `fct_` marts; rolling-latency window fn; funnel + latency-band cohort marts. 9 models, 27 tests pass. Marts: `fct_funnel`, `fct_latency_cohorts`.
+- **Phase 2 — NEXT.** LiteLLM gateway + Ollama fallback router (>4s threshold) + Langfuse tracing; compute LLM **cost per converted user**.
 - **Phase 3.** 2×2 factorial (progress bar × fallback) + one-sided **non-inferiority test** on loan-default rate (guardrail).
 - **Phase 4.** Streamlit dashboard + deploy to Streamlit Cloud (the clickable link).
 
@@ -63,6 +63,9 @@ uv sync                                          # base env (Phase 0)
 uv sync --group dbt                              # add a phase group: dbt | llm | experiments | dashboard
 uv run python synthetic-data/generate.py --users 20000 --seed 42   # regenerate data
 uv run python synthetic-data/load_duckdb.py      # load + print diagnostic
+# Phase 1 — dbt (always run from project root):
+uv run dbt run  --project-dir dbt --profiles-dir dbt
+uv run dbt test --project-dir dbt --profiles-dir dbt
 # Phase 2 prep (once Ollama installed):
 ollama pull llama3.2 && ollama pull llama3.2:1b
 # After changing deps, refresh the pip fallback:

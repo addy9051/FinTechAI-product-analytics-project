@@ -1,0 +1,11 @@
+# Local dbt-duckdb profile. Safe to commit — it holds only a relative path, no secrets.
+# `path` is resolved relative to the process CWD; always run dbt from the PROJECT ROOT:
+#   uv run dbt <cmd> --project-dir dbt --profiles-dir dbt
+loanlens:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: data/warehouse.duckdb
+      schema: main
+      threads: 4

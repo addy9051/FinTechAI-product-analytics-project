@@ -1,0 +1,20 @@
+version: 2
+
+models:
+  - name: fct_funnel
+    description: "End-to-end funnel: unique users per stage + step conversion rates."
+    columns:
+      - name: stage
+        data_tests: [unique, not_null]
+      - name: users
+        data_tests: [not_null]
+
+  - name: fct_latency_cohorts
+    description: >
+      The headline diagnostic: AI-analysis completion rate by LLM latency band.
+      Expected gradient ~89% (<3s) down to ~43% (>8s).
+    columns:
+      - name: latency_band
+        data_tests: [unique, not_null]
+      - name: completion_rate_pct
+        data_tests: [not_null]
