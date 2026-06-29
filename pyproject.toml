@@ -1,0 +1,31 @@
+[project]
+name = "loanlens"
+version = "0.1.0"
+description = "Diagnosing & fixing a 32% AI-analysis funnel drop-off in an LLM micro-loan platform (portfolio pilot)."
+readme = "README.md"
+requires-python = ">=3.11"
+
+# Base dependencies — used in every phase (synthetic data + DuckDB warehouse).
+# Kept deliberately light so `uv sync` for Phase 0 is fast.
+dependencies = [
+    "duckdb>=1.1.3",
+    "pandas>=2.2.3",
+    "numpy>=2.1.3",
+    "pyarrow>=18.0.0",
+    "faker>=33.1.0",
+]
+
+# Per-phase dependencies live in groups so each phase stays a clean, minimal
+# install. Pull one with e.g. `uv sync --group dbt`. The lockfile still resolves
+# every group together, so reproducibility is universal.
+[dependency-groups]
+dbt = ["dbt-core>=1.9.1", "dbt-duckdb>=1.9.1"]              # Phase 1 — transformation
+llm = ["litellm>=1.55.9", "langfuse>=2.57.0"]              # Phase 2 — gateway + observability
+experiments = ["statsmodels>=0.14.4", "scipy>=1.14.1"]     # Phase 3 — experiment analysis
+dashboard = ["streamlit>=1.41.1", "plotly>=5.24.1"]        # Phase 4 — dashboard
+
+[tool.uv]
+# This is an application (scripts), not an installable package — don't build it.
+package = false
+# Phase 0 needs only the base deps; phase groups are opt-in via --group.
+default-groups = []

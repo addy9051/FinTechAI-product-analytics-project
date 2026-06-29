@@ -47,13 +47,27 @@ without the cloud bill.
 
 ## Quickstart
 
+Dependencies are managed with [uv](https://docs.astral.sh/uv/) (`pyproject.toml` +
+`uv.lock`). Per-phase deps live in dependency groups, so the base install stays light.
+
 ```bash
-python -m pip install -r requirements.txt
+uv sync                  # create the env with base deps (Phase 0)
 
 # Phase 0 — synthetic data + warehouse (done)
+uv run python synthetic-data/generate.py --users 20000 --seed 42
+uv run python synthetic-data/load_duckdb.py
+```
+
+Later phases pull their own group, e.g. `uv sync --group dbt` (also: `llm`, `experiments`, `dashboard`).
+
+<details><summary>No uv? Use the pip fallback</summary>
+
+```bash
+python -m pip install -r requirements.txt   # auto-generated from uv.lock (all groups)
 python synthetic-data/generate.py --users 20000 --seed 42
 python synthetic-data/load_duckdb.py
 ```
+</details>
 
 Roadmap:
 - **Phase 1** — dbt models: staging → marts, rolling-latency window function, funnel, latency-band cohorts.

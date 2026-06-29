@@ -40,12 +40,18 @@ Ollama models: **`llama3.2`** = primary (slower), **`llama3.2:1b`** = fast fallb
 - Fallback threshold = **4s**; default rate ≈ 7.8%; default risk = f(credit_score, requested_amount).
 
 ## Commands
+Dependency manager is **uv** (`pyproject.toml` + `uv.lock`). Phase deps are in
+dependency groups; pull them per-phase. `requirements.txt` is an auto-generated
+pip fallback — don't hand-edit it.
 ```bash
-python -m pip install -r requirements.txt        # full deps
-python synthetic-data/generate.py --users 20000 --seed 42   # regenerate data
-python synthetic-data/load_duckdb.py             # load + print diagnostic
+uv sync                                          # base env (Phase 0)
+uv sync --group dbt                              # add a phase group: dbt | llm | experiments | dashboard
+uv run python synthetic-data/generate.py --users 20000 --seed 42   # regenerate data
+uv run python synthetic-data/load_duckdb.py      # load + print diagnostic
 # Phase 2 prep (once Ollama installed):
 ollama pull llama3.2 && ollama pull llama3.2:1b
+# After changing deps, refresh the pip fallback:
+uv export --all-groups --no-hashes --no-emit-project -o requirements.txt
 ```
 
 ## Conventions
@@ -53,6 +59,7 @@ ollama pull llama3.2 && ollama pull llama3.2:1b
 - dbt layers: `stg_` (1:1 cleanup) → `int_` (joins/logic) → `fct_`/`dim_` (marts).
 - Switch high-volume models to incremental once they'd exceed ~10M rows (here: events/traces).
 - Each phase is a clean context — `/clear` between phases to save tokens.
+- Manage deps with uv only (`uv add`, `uv sync`) — never `pip install` into the project. New phase deps go in the matching `[dependency-groups]` entry.
 
 ## Repo layout
 ```
