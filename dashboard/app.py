@@ -842,6 +842,13 @@ with tab_cost:
     ws4.metric("Fast Model Sessions", f"{fast_sessions_sim:,}",
                f"{fast_pct}% of {total_sessions:,}")
 
+    st.caption(
+        "Illustrative directional planning, not a calibrated forecast: the cost projection re-routes "
+        "traffic while holding the **converted-user count fixed** (in production, routing more to the "
+        "fast model would also cut latency → lift completion → change conversions), and the completion "
+        "estimate is linearly interpolated from the four latency-cohort bands."
+    )
+
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # TAB 5 — Production Monitoring

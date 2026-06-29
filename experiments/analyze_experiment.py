@@ -12,7 +12,9 @@ Sections:
   6. Benjamini-Hochberg       - multiple-testing correction across the test suite
   7. Non-inferiority guardrail- one-sided, FIXED-HORIZON test that default rate is not
                                 meaningfully worse (a null superiority test is NOT safety)
-  8. Ship decision            - primary improves AND guardrail non-inferior
+  8. Fairness guardrail       - one-sided non-inferiority on the prime-subprime completion
+                                gap the router opens (fair-lending / disparate-impact check)
+  9. Ship decision            - primary improves AND both guardrails non-inferior
 
 Run:  uv run python experiments/analyze_experiment.py
 """
@@ -31,6 +33,7 @@ from statsmodels.stats.proportion import proportion_effectsize, proportions_ztes
 DATA = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data"))
 ALPHA = 0.05
 NIM = 0.01          # non-inferiority margin: default rate may rise at most +1.0pp (risk-set)
+FAIR_NIM = 0.02     # fairness margin: the router may widen the prime-subprime gap at most +2.0pp
 CELL_NAMES = {(0, 0): "control", (1, 0): "progress-bar", (0, 1): "fallback", (1, 1): "both"}
 
 
@@ -134,6 +137,31 @@ def section_guardrail(df):
     return non_inferior
 
 
+def section_fairness(df):
+    print("\n=== 8. Fairness guardrail: equal benefit across credit bands (non-inferiority) ===")
+    if "subgroup" not in df.columns:
+        print("  (experiment.parquet has no subgroup — re-run simulate_experiment.py)")
+        return True
+    sub = df[df.progress_bar == 0]  # isolate the fallback effect (no UX confound)
+
+    def rate(group, fb):
+        s = sub[(sub.subgroup == group) & (sub.fallback == fb)]["completed"]
+        return s.mean(), len(s)
+
+    p_pc, n_pc = rate("Prime", 0); p_pf, n_pf = rate("Prime", 1)
+    p_sc, n_sc = rate("Subprime", 0); p_sf, n_sf = rate("Subprime", 1)
+    lift_prime, lift_sub = p_pf - p_pc, p_sf - p_sc
+    dgap = lift_prime - lift_sub  # how much MORE the router helps prime than subprime
+    se = np.sqrt(p_pc * (1 - p_pc) / n_pc + p_pf * (1 - p_pf) / n_pf
+                 + p_sc * (1 - p_sc) / n_sc + p_sf * (1 - p_sf) / n_sf)
+    ub = dgap + norm.ppf(1 - ALPHA) * se        # one-sided 95% upper bound on the gap
+    non_inferior = ub < FAIR_NIM
+    print(f"  router lift  prime {100*lift_prime:+.2f}pp | subprime {100*lift_sub:+.2f}pp")
+    print(f"  prime-subprime gap {100*dgap:+.2f}pp, one-sided 95% UB {100*ub:.2f}pp  vs NIM {100*FAIR_NIM:.1f}pp")
+    print(f"  -> {'NON-INFERIOR (fairness holds)' if non_inferior else 'DISPARATE IMPACT (do not ship)'}")
+    return non_inferior
+
+
 def main():
     df = pd.read_parquet(f"{DATA}/experiment.parquet")
     print(f"loaded experiment: {len(df):,} users, {df.progress_bar.nunique()*df.fallback.nunique()} cells")
@@ -156,12 +184,14 @@ def main():
     section_bh({**pvals, "interaction": m.pvalues["progress_bar:fallback"]})
 
     non_inferior = section_guardrail(df)
+    fair_non_inferior = section_fairness(df)
 
-    print("\n=== 8. Ship decision ===")
+    print("\n=== 9. Ship decision ===")
     primary_improves = pvals["both"] < ALPHA  # combined fix beats control on completion
-    ship = primary_improves and non_inferior
+    ship = primary_improves and non_inferior and fair_non_inferior
     print(f"  primary completion improves: {primary_improves}")
     print(f"  default guardrail non-inferior: {non_inferior}")
+    print(f"  fairness guardrail non-inferior: {fair_non_inferior}")
     print(f"  DECISION: {'SHIP the combined fix' if ship else 'DO NOT SHIP'}")
 
 
