@@ -9,8 +9,13 @@ We inject KNOWN ground-truth effects so the analysis can be checked against trut
 (a synthetic experiment is only useful if you can verify the test recovers what you
 put in):
 
-    completion(A,B) = P0 + a_A*A + a_B*B + a_AB*(A*B)
+    completion(A,B) = P0 + a_A*A + a_B*B + a_AB*(A*B)   [subprime: a_B is FAIR_DISPARITY smaller]
     default(B)      = D0 + d_B*B          # fallback's faster/cheaper model nudges default up
+
+We also split each cell into a credit subgroup (prime/subprime) and inject a small FAIRNESS
+disparity: the fast fallback model's lower capacity gives subprime applicants a slightly
+smaller completion benefit. Control completion stays equal across subgroups (no baseline
+bias), so the fairness non-inferiority guardrail tests something REAL — it can fail.
 
 P0 is grounded in the observed baseline completion (~66.6% = 1 - the 33.4% drop).
 
@@ -38,6 +43,10 @@ FUNDED_RATE = 0.62  # P(funded | completed), constant across arms (treatments ac
 D0 = 0.078          # baseline default rate among funded loans
 D_FALLBACK = 0.005  # fallback raises default slightly — the guardrail's reason to exist
 
+# Fairness: an injected credit-subgroup disparity (makes the fairness guardrail falsifiable).
+SUBPRIME_SHARE = 0.36   # ~ the data's share of credit_score < 670
+FAIR_DISPARITY = 0.006  # subprime's fallback completion lift is 0.6pp smaller than prime's
+
 CELLS = [(0, 0), (1, 0), (0, 1), (1, 1)]  # (progress_bar, fallback)
 
 
@@ -46,7 +55,10 @@ def _simulate(n_per_arm: int, seed: int, srm: bool) -> pd.DataFrame:
     frames = []
     for a, b in CELLS:
         n = int(n_per_arm * 0.80) if (srm and a == 1) else n_per_arm  # break balance on A
-        p_complete = P0 + A_PROGRESS * a + A_FALLBACK * b + A_INTERACT * a * b
+        is_sub = rng.random(n) < SUBPRIME_SHARE
+        # the fallback model benefits subprime applicants slightly less (injected disparity)
+        fb_effect = np.where(is_sub, A_FALLBACK - FAIR_DISPARITY, A_FALLBACK)
+        p_complete = P0 + A_PROGRESS * a + fb_effect * b + A_INTERACT * a * b
         completed = rng.random(n) < p_complete
         funded = completed & (rng.random(n) < FUNDED_RATE)
         p_default = D0 + D_FALLBACK * b
@@ -54,6 +66,7 @@ def _simulate(n_per_arm: int, seed: int, srm: bool) -> pd.DataFrame:
         frames.append(pd.DataFrame({
             "progress_bar": a,
             "fallback": b,
+            "subgroup": np.where(is_sub, "Subprime", "Prime"),
             "completed": completed.astype(int),
             "funded": funded.astype(int),
             "defaulted": defaulted.astype(int),

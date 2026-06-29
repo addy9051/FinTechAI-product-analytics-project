@@ -1,0 +1,10 @@
+{
+  "built_at": "2026-06-29T17:23:01.147249+00:00",
+  "row_counts": {
+    "funnel": 6,
+    "latency_cohorts": 4,
+    "llm_cost": 3,
+    "experiment": 200000,
+    "cusum_series": 120
+  }
+}

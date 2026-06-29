@@ -3,37 +3,74 @@
     {
       "progress_bar": 0,
       "fallback": 0,
-      "completion": 0.6621,
-      "lift_pp": 0.0
+      "completion": 0.6681,
+      "lift_pp": 0.0,
+      "n": 50000,
+      "ci_lo": 0.664,
+      "ci_hi": 0.6723,
+      "p_value": null
     },
     {
       "progress_bar": 0,
       "fallback": 1,
-      "completion": 0.747,
-      "lift_pp": 8.49
+      "completion": 0.7462,
+      "lift_pp": 7.81,
+      "n": 50000,
+      "ci_lo": 0.7424,
+      "ci_hi": 0.75,
+      "p_value": 0.0
     },
     {
       "progress_bar": 1,
       "fallback": 0,
-      "completion": 0.6947,
-      "lift_pp": 3.26
+      "completion": 0.695,
+      "lift_pp": 2.68,
+      "n": 50000,
+      "ci_lo": 0.6909,
+      "ci_hi": 0.699,
+      "p_value": 0.0
     },
     {
       "progress_bar": 1,
       "fallback": 1,
-      "completion": 0.763,
-      "lift_pp": 10.09
+      "completion": 0.7605,
+      "lift_pp": 9.24,
+      "n": 50000,
+      "ci_lo": 0.7567,
+      "ci_hi": 0.7642,
+      "p_value": 0.0
     }
   ],
-  "interaction_coef": -0.063,
-  "interaction_p": 0.0016347818954374111,
+  "interaction_coef": -0.0467,
+  "interaction_p": 0.019664159957318333,
   "guardrail": {
-    "default_fallback": 0.0834,
-    "default_control": 0.0801,
-    "diff_pp": 0.33,
-    "upper_bound_pp": 0.64,
+    "default_fallback": 0.0832,
+    "default_control": 0.0781,
+    "diff_pp": 0.51,
+    "upper_bound_pp": 0.81,
     "nim_pp": 1.0,
     "non_inferior": true
+  },
+  "srm": {
+    "cell_counts": [
+      50000,
+      50000,
+      50000,
+      50000
+    ],
+    "chi2": 0.0,
+    "p_value": 1.0,
+    "pass": true
+  },
+  "power": {
+    "achieved_power": 1.0,
+    "mde_effect_size_h": 0.0177,
+    "n_per_arm": 50000
+  },
+  "p_values": {
+    "fallback": 0.0,
+    "progress-bar": 0.0,
+    "both": 0.0
   },
   "ship": true
 }

@@ -1,0 +1,18 @@
+{
+  "prime": {
+    "control": 0.6676,
+    "fallback": 0.7466,
+    "lift_pp": 7.9,
+    "n": 63984
+  },
+  "subprime": {
+    "control": 0.6691,
+    "fallback": 0.7455,
+    "lift_pp": 7.64,
+    "n": 36016
+  },
+  "disparity_pp": 0.26,
+  "upper_bound_pp": 1.25,
+  "nim_pp": 2.0,
+  "non_inferior": true
+}
