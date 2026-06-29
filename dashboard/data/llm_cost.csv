@@ -1,0 +1,4 @@
+model_version,sessions,converted_users,total_cost_usd,avg_cost_per_session,cost_per_converted_user
+ALL,16339,6620.0,206.3021,0.012626,0.031163
+fast,2546,1291.0,9.6247,0.00378,0.007455
+primary,13793,5329.0,196.6774,0.014259,0.036907

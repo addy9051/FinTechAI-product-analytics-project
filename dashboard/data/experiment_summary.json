@@ -1,0 +1,39 @@
+{
+  "cells": [
+    {
+      "progress_bar": 0,
+      "fallback": 0,
+      "completion": 0.6621,
+      "lift_pp": 0.0
+    },
+    {
+      "progress_bar": 0,
+      "fallback": 1,
+      "completion": 0.747,
+      "lift_pp": 8.49
+    },
+    {
+      "progress_bar": 1,
+      "fallback": 0,
+      "completion": 0.6947,
+      "lift_pp": 3.26
+    },
+    {
+      "progress_bar": 1,
+      "fallback": 1,
+      "completion": 0.763,
+      "lift_pp": 10.09
+    }
+  ],
+  "interaction_coef": -0.063,
+  "interaction_p": 0.0016347818954374111,
+  "guardrail": {
+    "default_fallback": 0.0834,
+    "default_control": 0.0801,
+    "diff_pp": 0.33,
+    "upper_bound_pp": 0.64,
+    "nim_pp": 1.0,
+    "non_inferior": true
+  },
+  "ship": true
+}

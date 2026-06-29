@@ -1,0 +1,8 @@
+# Lean runtime deps for the deployed Streamlit dashboard ONLY.
+# The app reads committed snapshots in dashboard/data/ (built by build_snapshots.py),
+# so it needs no DuckDB / dbt / Ollama / statsmodels at runtime — keeping the
+# Streamlit Cloud deploy fast. Streamlit Cloud reads this file when the entrypoint
+# is dashboard/app.py.
+streamlit==1.58.0
+plotly==6.8.0
+pandas==3.0.4

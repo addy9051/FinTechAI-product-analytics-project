@@ -69,11 +69,28 @@ python synthetic-data/load_duckdb.py
 ```
 </details>
 
-Roadmap:
-- **Phase 1** — dbt models: staging → marts, rolling-latency window function, funnel, latency-band cohorts.
-- **Phase 2** — LiteLLM gateway → Ollama with a >4s latency-fallback router + Langfuse tracing; compute cost-per-converted-user.
-- **Phase 3** — 2×2 factorial (progress bar × fallback) with a one-sided non-inferiority test on loan-default rate.
-- **Phase 4** — Streamlit dashboard, deployed to a free host for a clickable demo.
+## Dashboard (the clickable demo)
+
+The recruiter-facing payoff. It reads small committed snapshots in `dashboard/data/`
+(funnel, latency cohorts, cost, 2×2 results, CUSUM series), so it runs with **no DuckDB,
+dbt, or Ollama** — a fast, free deploy.
+
+```bash
+uv sync --group dashboard
+uv run python dashboard/build_snapshots.py   # refresh snapshots from the pipeline
+uv run streamlit run dashboard/app.py        # http://localhost:8501
+```
+
+**Live demo:** _&lt;add your Streamlit Cloud URL here&gt;_
+
+**Deploy (free):** push to GitHub → [share.streamlit.io](https://share.streamlit.io) → New app →
+set the main file to `dashboard/app.py` (deps come from `dashboard/requirements.txt`).
+
+## Status — Phases 0–4 complete
+- **Phase 1 ✅** dbt: staging → marts, rolling-latency window fn, funnel + latency-band cohorts.
+- **Phase 2 ✅** LiteLLM → local Ollama fallback router (>4s) + Langfuse tracing; cost-per-converted-user.
+- **Phase 3 ✅** 2×2 factorial + interaction, one-sided non-inferiority guardrail, back-door causal adjustment.
+- **Phase 4 ✅** Streamlit dashboard + CUSUM drift monitor (deploy = the clickable demo).
 
 ## Repo layout
 ```

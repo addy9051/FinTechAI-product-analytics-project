@@ -1,0 +1,7 @@
+stage_order,stage,users,pct_of_top,step_conversion_pct
+1,sign_up,20000.0,100.0,
+2,bank_link,16339.0,81.7,81.7
+3,ai_analysis_initiated,16339.0,81.7,100.0
+4,ai_analysis_completed,10818.0,54.1,66.2
+5,loan_terms_offered,8993.0,45.0,83.1
+6,loan_accepted,6620.0,33.1,73.6
