@@ -75,8 +75,10 @@ def generate(n_users: int, seed: int, out_dir: str) -> None:
         "signup_ts": signup_ts,
         "country": rng.choice(["US", "UK", "DE", "IN", "NG"], n_users, p=[.45, .2, .12, .15, .08]),
         "device": rng.choice(["ios", "android", "web"], n_users, p=[.4, .4, .2]),
-        # credit_score drives loan default later; kept latent-ish but exposed for joins
-        "credit_score": np.clip(rng.normal(660, 70, n_users), 350, 850).round().astype(int),
+        # credit_score drives loan default later. Beta(5,2) gives a realistic
+        # left-skewed, FICO-like shape (peak ~740, long tail toward subprime) —
+        # a symmetric normal would over-state the share of mid-range scores.
+        "credit_score": np.clip((rng.beta(5, 2, n_users) * 550 + 300).round().astype(int), 300, 850),
         "requested_amount": rng.choice([500, 1000, 2000, 3000, 5000], n_users),
     })
 
@@ -137,10 +139,13 @@ def generate(n_users: int, seed: int, out_dir: str) -> None:
         ts += timedelta(seconds=int(rng.integers(2, 20)))
         events.append((uid, "loan_terms_offered", ts))
 
-        # default risk: lower credit score + higher amount -> higher default
+        # default risk: lower credit score + higher amount -> higher default.
+        # Reference score 690 ≈ the realistic Beta(5,2) mean, so the intercept
+        # reads as "baseline default for a median-credit applicant"; intercept
+        # tuned to hold the base default rate near the documented ~7.8%.
         score = users.loc[i, "credit_score"]
         amount = users.loc[i, "requested_amount"]
-        default_logit = -3.2 - 0.012 * (score - 660) + 0.00018 * amount
+        default_logit = -3.35 - 0.012 * (score - 690) + 0.00018 * amount
         default_prob = float(_sigmoid(np.array([default_logit]))[0])
 
         accepted = rng.random() < p_accept_given_offer
