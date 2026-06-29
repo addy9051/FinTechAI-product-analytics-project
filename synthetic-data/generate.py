@@ -49,15 +49,26 @@ def _sigmoid(x: np.ndarray) -> np.ndarray:
     return 1.0 / (1.0 + np.exp(-x))
 
 
-def abandon_prob(latency_s: np.ndarray) -> np.ndarray:
-    """P(user abandons during AI analysis) rising with latency.
+# Mobile users are less patient than desktop/web — a secondary abandonment driver.
+DEVICE_IMPATIENCE = {"web": -0.5, "ios": 0.1, "android": 0.1}
 
-    Tuned so the overall initiated->completed drop lands near ~32% given the
-    primary model's latency distribution. This is the causal core of the dataset.
+
+def abandon_logit(latency_s: float, device: str, requested_amount: int) -> float:
+    """Log-odds of abandoning AI analysis. LATENCY is the dominant, causal driver;
+    device and loan-size 'commitment' are secondary.
+
+    Crucially, `requested_amount` is a CONFOUNDER of the latency->abandonment link: it
+    raises latency (requested_amount -> input_tokens -> latency) *and* lowers abandonment
+    (committed, higher-amount applicants push through). So the naive latency<->completion
+    association is biased, and a back-door adjustment on requested_amount is required to
+    recover the true latency effect — the honest, non-circular causal artifact for Phase 3.
     """
-    # ~5% baseline impatience, climbing past the 4s threshold; tuned so the
-    # latency-weighted average abandonment lands near 32%.
-    return np.clip(0.05 + 0.62 * _sigmoid(0.5 * (latency_s - 6.5)), 0.0, 0.95)
+    return (
+        -0.64
+        + 0.30 * (latency_s - 6.5)                    # latency: dominant causal effect
+        + DEVICE_IMPATIENCE.get(device, 0.0)          # secondary: mobile less patient than web
+        - 0.25 * (requested_amount - 2300) / 1000.0   # commitment: bigger ask -> push through
+    )
 
 
 def generate(n_users: int, seed: int, out_dir: str) -> None:
@@ -86,6 +97,11 @@ def generate(n_users: int, seed: int, out_dir: str) -> None:
     # Most traffic on primary; this is the pre-fix state we are diagnosing.
     model_choice = rng.choice(["primary", "fast"], n_users, p=[0.85, 0.15])
 
+    # per-user attribute arrays for fast row access inside the loop
+    device_arr = users["device"].to_numpy()
+    amount_arr = users["requested_amount"].to_numpy()
+    score_arr = users["credit_score"].to_numpy()
+
     # ---- funnel simulation ----------------------------------------------
     events = []
     traces = []
@@ -112,8 +128,15 @@ def generate(n_users: int, seed: int, out_dir: str) -> None:
 
         m = model_choice[i]
         spec = MODELS[m]
-        latency_s = float(max(0.3, rng.normal(spec["latency_mean_s"], spec["latency_sd_s"])))
-        in_tok = int(rng.integers(1800, 4200))    # bank statement is token-heavy
+        amount = int(amount_arr[i])
+        device = device_arr[i]
+        # CONFOUNDER arm 1: input_tokens scale with the requested amount (bigger loan ->
+        # richer bank statement -> more tokens); mean ~3000.
+        in_tok = int(np.clip(rng.normal(1500 + 0.65 * amount, 400), 800, 6000))
+        # latency = model baseline + a token-driven component (more tokens -> slower).
+        # Model stays the DOMINANT latency driver; tokens add the confounding path.
+        latency_s = float(max(0.3, rng.normal(spec["latency_mean_s"], spec["latency_sd_s"])
+                              + 0.8 * (in_tok - 3000) / 1000.0))
         out_tok = int(rng.integers(180, 700))
         cached = int(in_tok * rng.uniform(0.0, 0.4))
         cost = ((in_tok - cached) / 1000 * spec["cost_per_1k_in"]
@@ -126,8 +149,10 @@ def generate(n_users: int, seed: int, out_dir: str) -> None:
         traces.append((uid, m, round(latency_s, 3), in_tok, out_tok, cached,
                        round(cost, 6), round(confidence, 4), fallback_triggered, ts))
 
-        # ABANDON during analysis as a function of latency (the 32% drop)
-        if rng.random() < abandon_prob(np.array([latency_s]))[0]:
+        # ABANDON during analysis: latency-dominant, plus device + the commitment
+        # confounder + irreducible noise. Still the ~32% drop, now causally confounded.
+        p_abandon = _sigmoid(abandon_logit(latency_s, device, amount) + rng.normal(0, 0.3))
+        if rng.random() < p_abandon:
             continue
         ts += timedelta(seconds=int(latency_s))
         events.append((uid, "ai_analysis_completed", ts))
@@ -143,9 +168,8 @@ def generate(n_users: int, seed: int, out_dir: str) -> None:
         # Reference score 690 ≈ the realistic Beta(5,2) mean, so the intercept
         # reads as "baseline default for a median-credit applicant"; intercept
         # tuned to hold the base default rate near the documented ~7.8%.
-        score = users.loc[i, "credit_score"]
-        amount = users.loc[i, "requested_amount"]
-        default_logit = -3.35 - 0.012 * (score - 690) + 0.00018 * amount
+        score = int(score_arr[i])
+        default_logit = -3.45 - 0.012 * (score - 690) + 0.00018 * amount
         default_prob = float(_sigmoid(np.array([default_logit]))[0])
 
         accepted = rng.random() < p_accept_given_offer

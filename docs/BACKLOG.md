@@ -5,7 +5,13 @@ must land. Newest at top.
 
 ---
 
-## [ ] Confounder enrichment of `abandon_prob` — **do before Phase 3**
+## [x] Confounder enrichment of `abandon_prob` — **DONE** (Phase 3 start)
+
+**Resolution.** `synthetic-data/generate.py` now models `requested_amount → input_tokens → latency`
+(corr amount↔tokens 0.93, tokens↔latency 0.26) and `requested_amount → commitment → completion`
+(completion 64.0%→70.4% across loan size). Acceptance met: drop 33.4%, gradient 86.4→78.9→63.1→43.3,
+default 7.91%, and the back-door adjustment **moves the latency coef −0.264 → −0.298 (+12.8%)** — the
+confounding is real and adjustment is non-trivial. `abandon_prob` was renamed `abandon_logit`.
 
 **Why.** Today `abandon_prob = f(latency)` only, so LLM latency is the *sole* systematic
 driver of abandonment. That is too clean and, critically, makes the planned **back-door

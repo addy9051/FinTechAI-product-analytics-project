@@ -29,16 +29,15 @@ Ollama models: **`llama3.2`** = primary (slower), **`llama3.2:1b`** = fast fallb
 - **Phase 0 — DONE.** Synthetic data + DuckDB load. 32.9% drop confirmed, causal via latency.
 - **Phase 1 — DONE.** dbt-duckdb project: 4 `stg_` → 3 `int_` → 2 `fct_` marts; rolling-latency window fn; funnel + latency-band cohort marts. 9 models, 27 tests pass. Marts: `fct_funnel`, `fct_latency_cohorts`.
 - **Phase 2 — DONE.** Router (`llm/gateway.py`): primary `ollama_chat/llama3.2` → fast `ollama_chat/llama3.2:1b` on >4s, with telemetry. Cost-per-converted-user mart `fct_llm_cost`. Langfuse tracing via litellm `langfuse_otel` — verified traces land (name/user/tags/session).
-- **Phase 3.** 2×2 factorial (progress bar × fallback) + one-sided **non-inferiority test** on loan-default rate (guardrail).
+- **Phase 3 — IN PROGRESS.** Confounder enrichment DONE (back-door moves latency coef −0.264→−0.298, +12.8%). Next: 2×2 factorial (progress bar × fallback) + one-sided **non-inferiority test** on default rate (guardrail) + back-door causal notebook.
 - **Phase 4.** Streamlit dashboard + deploy to Streamlit Cloud (the clickable link).
 
-**Tracked carry-overs** (`docs/BACKLOG.md`):
-- **Before Phase 3:** enrich `abandon_prob` with a confounder (`requested_amount → tokens → latency` *and* `→ commitment → abandonment`) so the back-door causal estimate isn't circular. Keep latency dominant; drop stays ~32%.
+**Tracked carry-overs** (`docs/BACKLOG.md`): none open — confounder enrichment DONE.
 
 ## Key facts (don't re-derive)
 - Funnel stages: `sign_up → bank_link → ai_analysis_initiated → ai_analysis_completed → loan_terms_offered → loan_accepted`.
-- The 32% drop is between `ai_analysis_initiated` and `ai_analysis_completed`, **driven by LLM latency** (`abandon_prob` in the generator).
-- Latency bands: `<3s / 3–5s / 5–8s / >8s`. Confirmed completion rates: 88.8% → 80.0% → 63.8% → 44.0%.
+- The ~33% drop is between `ai_analysis_initiated` and `ai_analysis_completed`, **driven by LLM latency** (`abandon_logit` in the generator). `requested_amount` is a **confounder**: → tokens → latency, AND → commitment → completion. So naive latency↔completion is biased; back-door adjustment on amount is needed.
+- Latency bands: `<3s / 3–5s / 5–8s / >8s`. Completion rates (post-enrichment): 86.4% → 78.9% → 63.1% → 43.3%.
 - Raw tables in DuckDB: `raw_users`, `raw_funnel_events`, `raw_llm_traces`, `raw_loans`.
 - Fallback threshold = **4s**; default rate ≈ 7.8%; default risk = f(credit_score, requested_amount).
 - Local Ollama is **CPU-only and slow** (3B cold-load ~60s; even 1B inference ~8s). So: `warmup()` models before timed routing; the live gateway *proves the mechanism* on a few cases, while at-scale cost/funnel analysis uses the synthetic `raw_llm_traces` (never 20k live calls).
