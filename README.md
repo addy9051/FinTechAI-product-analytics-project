@@ -160,7 +160,7 @@ docs/            ADRs (statistical methods), backlog
 
 ---
 
-## dbt DAGI
+## dbt DAG
 
 ```mermaid
 flowchart LR
