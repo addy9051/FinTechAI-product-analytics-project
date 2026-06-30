@@ -160,6 +160,44 @@ docs/            ADRs (statistical methods), backlog
 
 ---
 
+## dbt DAG
+
+```mermaid
+flowchart LR
+    int_llm_rolling_latency(int_llm_rolling_latency):::model
+    int_session_llm(int_session_llm):::model
+    int_user_funnel(int_user_funnel):::model
+    fct_funnel(fct_funnel):::model
+    fct_latency_cohorts(fct_latency_cohorts):::model
+    stg_funnel_events(stg_funnel_events):::model
+    stg_llm_traces(stg_llm_traces):::model
+    stg_loans(stg_loans):::model
+    stg_users(stg_users):::model
+    fct_llm_cost(fct_llm_cost):::model
+    raw_users[(raw_users)]:::source
+    raw_funnel_events[(raw_funnel_events)]:::source
+    raw_llm_traces[(raw_llm_traces)]:::source
+    raw_loans[(raw_loans)]:::source
+    stg_llm_traces --> int_llm_rolling_latency
+    stg_llm_traces --> int_session_llm
+    stg_users --> int_session_llm
+    int_user_funnel --> int_session_llm
+    stg_funnel_events --> int_user_funnel
+    int_user_funnel --> fct_funnel
+    int_session_llm --> fct_latency_cohorts
+    raw_funnel_events --> stg_funnel_events
+    raw_llm_traces --> stg_llm_traces
+    raw_loans --> stg_loans
+    raw_users --> stg_users
+    stg_llm_traces --> fct_llm_cost
+    int_user_funnel --> fct_llm_cost
+    classDef source fill:#f9f9f9,stroke:#333,stroke-width:2px;
+    classDef seed fill:#d4edda,stroke:#28a745,stroke-width:2px;
+    classDef model fill:#cce5ff,stroke:#007bff,stroke-width:2px;
+```
+
+---
+
 ## Honest notes
 
 - **Synthetic data by design.** The latency→abandonment mechanism and a credit-subgroup
